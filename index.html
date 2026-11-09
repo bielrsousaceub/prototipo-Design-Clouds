@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Design Clouds – Protótipo</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#eef1f8;--panel:#fff;--ink:#1b1f3b;--mute:#5d6384;--line:#d9deee;--acc:#5b5bd6;--acc-ink:#fff;--ok:#1f8f5f;--warn:#c2410c;--sky1:#dfe6ff;--sky2:#f6f8ff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10122a;--panel:#191c3a;--ink:#eceefb;--mute:#a1a7cc;--line:#2c3061;--acc:#8e8cff;--acc-ink:#10122a;--ok:#4cd39b;--warn:#ff9a6b;--sky1:#232855;--sky2:#14173a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10122a;--panel:#191c3a;--ink:#eceefb;--mute:#a1a7cc;--line:#2c3061;--acc:#8e8cff;--acc-ink:#10122a;--ok:#4cd39b;--warn:#ff9a6b;--sky1:#232855;--sky2:#14173a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Avenir Next","Segoe UI",Helvetica,Arial,sans-serif}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 20px 0;max-width:1100px;margin:0 auto}
+h1{font:700 24px/1 Georgia,"Times New Roman",serif;margin:0;letter-spacing:-.3px}
+h2{font:600 17px/1.2 Georgia,serif;margin:0 0 12px}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav button{border:0;background:none;color:var(--mute);font:inherit;padding:8px 14px;border-radius:999px;cursor:pointer}
+nav button[aria-current=true]{background:var(--acc);color:var(--acc-ink);font-weight:600}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;padding:16px 20px 32px;max-width:1100px;margin:0 auto}
+main.wide{grid-template-columns:1fr}
+.stage{position:relative;min-height:440px;border-radius:20px;background:radial-gradient(ellipse at 50% 18%,var(--sky2),var(--sky1));border:1px solid var(--line);overflow:hidden;touch-action:none}
+.stage canvas{display:block;width:100%;height:100%;position:absolute;inset:0;cursor:grab}
+.hint{position:absolute;left:14px;bottom:10px;font-size:12px;color:var(--mute)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px}
+.row{display:grid;gap:6px;margin-bottom:14px}
+.row label,.lbl{font-size:13px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input[type=text],select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input[type=color]{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:3px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);cursor:pointer}
+.sw button[aria-pressed=true]{border-color:var(--ink);box-shadow:0 0 0 2px var(--panel) inset}
+.btn{border:0;border-radius:12px;padding:11px 16px;font-family:inherit;font-weight:600;font-size:15px;cursor:pointer;background:var(--acc);color:var(--acc-ink)}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn[disabled]{opacity:.45;cursor:default}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:600;background:var(--sky1)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:16px;padding:16px;background:var(--panel)}
+.card.dim{opacity:.5}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto;font-size:12px;max-height:240px}
+.tee{height:120px;border-radius:14px 14px 10px 10px;display:grid;place-items:center;font-weight:700;text-align:center;padding:8px;margin-bottom:10px;border:1px solid var(--line)}
+.price{font:700 22px Georgia,serif}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:820px){main{grid-template-columns:1fr}.stage{min-height:360px}nav{margin-left:0}}
+</style>
+</head>
+<body>
+<header><h1>Design Clouds</h1><nav id="nav"></nav></header>
+<main id="main">
+  <section class="stage" id="stage"><div class="hint">Arraste para girar a peça</div></section>
+  <section class="panel" id="panel"></section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COLORS=['#5b5bd6','#e5484d','#2f9e6f','#f5a524','#111827','#f2f2f2'];
+const FONTS={'Sans':'system-ui, sans-serif','Serifa':'Georgia, serif','Mono':'"Courier New", monospace','Manuscrita':'"Brush Script MT", cursive'};
+const SIZES={P:{s:.92,c:90},M:{s:1,c:98},G:{s:1.08,c:106},GG:{s:1.16,c:114}};
+const DEF={pele:'#c68f6b',base:'camiseta',cor:'#5b5bd6',texto:'Design Clouds',corTexto:'#ffffff',fonte:FONTS.Sans,patch:'',alt:170,peso:70,sexo:'F',tam:'M'};
+let S={...DEF};
+try{Object.assign(S,JSON.parse(localStorage.getItem('dc-draft')||'{}'))}catch(e){}
+let tab='estudio',quote=null,likes={},U=null,cart=[],coupon=null,pick=false,cupons={},orders=[],hidden={},reports=[];
+const PRODUCTS=[{n:'Jaqueta jeans anos 90',l:'Brechó Vento Sul',p:89},{n:'Camisa de seda vintage',l:'Garimpo da Ana',p:64},{n:'Moletom upcycle',l:'Ateliê Remoda',p:120},{n:'Calça cargo reformada',l:'Brechó Vento Sul',p:75}];
+const EVENTS=[{n:'Feira Remoda',d:'15/11, 10h',l:'Brasília, Conic',s:'Brechó Vento Sul'},{n:'Garimpo na Praça',d:'22/11, 14h',l:'Brasília, Asa Sul',s:'Garimpo da Ana'}];
+const POSTS=[
+ {a:'@marina.cria',cor:'#e5484d',texto:'Garimpo',corTexto:'#ffffff',patch:'🌸',likes:128},
+ {a:'@theo.print',cor:'#111827',texto:'Noite Longa',corTexto:'#f5a524',patch:'⚡',likes:86},
+ {a:'@bia.upcycle',cor:'#2f9e6f',texto:'Feira da Remoda',corTexto:'#ffffff',patch:'★',likes:203}];
+const MAKERS=[{n:'Ateliê da Lia',f:1,d:7},{n:'Serigrafia Norte',f:.9,d:10},{n:'Costura do Bairro',f:1.15,d:5}];
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200)}
+
+/* ---------- Medidas e caimento (estimativa) ---------- */
+function body(){
+  const chest=52+.55*S.peso+(S.sexo==='M'?6:0)+(S.alt-170)*.1;
+  const sug=Object.keys(SIZES).find(k=>SIZES[k].c-chest>=4)||'GG';
+  const ease=SIZES[S.tam].c-chest;
+  const fit=ease<0?['apertada','warn']:ease<4?['justa','ok']:ease<=14?['ideal','ok']:['folgada','warn'];
+  return {chest,sug,ease,fit};
+}
+
+/* ---------- 3D ---------- */
+let R,scene,cam,fig,bodyG,garG,floor,skinM,hairM,pantsM,gl=true;
+function mat(c,r){return new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r||.85})}
+function loft(rg,seg){const g=new THREE.BufferGeometry(),p=[],uv=[],ix=[],n=rg.length;
+  for(let i=0;i<n;i++){const r=rg[i];for(let j=0;j<=seg;j++){const t=j/seg*Math.PI*2;p.push(Math.sin(t)*r[1],r[0],(r[3]||0)+Math.cos(t)*r[2]);uv.push(j/seg,i/(n-1))}}
+  for(let i=0;i<n-1;i++)for(let j=0;j<seg;j++){const a=i*(seg+1)+j,b=a+seg+1;ix.push(a,a+1,b,b,a+1,b+1)}
+  g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ix);g.computeVertexNormals();return g}
+function ell(m,sx,sy,sz,x,y,z){const o=new THREE.Mesh(new THREE.SphereGeometry(1,28,20),m);o.scale.set(sx,sy,sz);o.position.set(x,y,z);return o}
+function initGL(){
+  try{
+    R=new THREE.WebGLRenderer({antialias:true,alpha:true});R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.15;R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+    $('stage').appendChild(R.domElement);
+    scene=new THREE.Scene();cam=new THREE.PerspectiveCamera(32,1,.1,50);cam.position.set(0,-.1,7.4);
+    scene.add(new THREE.HemisphereLight(0xffffff,0x8890c0,.65));
+    const d=new THREE.DirectionalLight(0xffffff,.95);d.position.set(3,5,5);d.castShadow=true;d.shadow.mapSize.set(1024,1024);Object.assign(d.shadow.camera,{left:-3,right:3,top:3,bottom:-3,near:.5,far:20});d.shadow.bias=-.0005;d.shadow.radius=4;scene.add(d);
+    const rm=new THREE.DirectionalLight(0xbfc8ff,.55);rm.position.set(-4,2,-4);scene.add(rm);
+    fig=new THREE.Group();bodyG=new THREE.Group();garG=new THREE.Group();fig.add(bodyG,garG);fig.position.y=-1.25;scene.add(fig);
+    floor=new THREE.Mesh(new THREE.CircleGeometry(2.2,48),new THREE.ShadowMaterial({opacity:.22}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.25;floor.receiveShadow=true;scene.add(floor);
+    skinM=mat('#c68f6b',.6);skinM.side=THREE.DoubleSide;hairM=mat('#2a1d16',.7);pantsM=mat('#2b3a5a',.9);pantsM.side=THREE.DoubleSide;
+    const sh=mat('#f2f2f2',.6);
+    bodyG.add(new THREE.Mesh(loft([[1.18,.27,.17],[1.28,.3,.18],[1.4,.27,.16],[1.55,.28,.17],[1.72,.31,.18],[1.88,.33,.16],[1.98,.3,.12],[2.05,.14,.11],[2.3,.09,.09]],40),skinM));
+    [1,-1].forEach(sd=>{
+      const leg=new THREE.Mesh(loft([[.04,.062,.07,.02],[.4,.085,.09],[.62,.098,.1],[.9,.125,.135],[1.2,.14,.15],[1.36,.15,.16]],32),pantsM);leg.position.x=sd*.13;bodyG.add(leg);
+      bodyG.add(ell(sh,.07,.05,.16,sd*.13,.05,.08));
+      const arm=new THREE.Group();arm.position.set(sd*.41,1.96,0);arm.rotation.z=sd*.1;
+      arm.add(new THREE.Mesh(loft([[-.88,.04,.035],[-.55,.06,.058],[-.42,.055,.055],[-.1,.075,.075],[0,.07,.07]],28),skinM));arm.add(ell(skinM,.045,.1,.03,0,-.95,0));bodyG.add(arm);
+      bodyG.add(ell(skinM,.02,.035,.02,sd*.115,2.36,0));
+    });
+    bodyG.add(ell(skinM,.115,.15,.13,0,2.37,.01));bodyG.add(ell(skinM,.02,.03,.03,0,2.34,.135));bodyG.add(ell(hairM,.125,.14,.125,0,2.41,-.03));
+    fig.traverse(o=>{if(o.isMesh)o.castShadow=true});
+    new ResizeObserver(resize).observe($('stage'));
+    let drag=false,lx=0,idle=true;const c=R.domElement;
+    c.addEventListener('pointerdown',e=>{drag=true;idle=false;lx=e.clientX;c.setPointerCapture(e.pointerId)});
+    c.addEventListener('pointermove',e=>{if(drag){fig.rotation.y+=(e.clientX-lx)*.01;lx=e.clientX}});
+    c.addEventListener('pointerup',()=>drag=false);
+    (function loop(){if(idle&&!matchMedia('(prefers-reduced-motion: reduce)').matches)fig.rotation.y+=.004;R.render(scene,cam);requestAnimationFrame(loop)})();
+    resize();
+  }catch(e){gl=false;$('stage').innerHTML='<p style="padding:24px">Seu navegador não conseguiu abrir o modo 3D (WebGL). As demais telas continuam funcionando.</p>'}
+}
+function resize(){const s=$('stage'),w=s.clientWidth,h=s.clientHeight;if(!w||!h)return;R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+function printTex(){
+  const c=document.createElement('canvas');c.width=512;c.height=366;const x=c.getContext('2d');
+  x.textAlign='center';x.fillStyle=S.corTexto;let y=270;
+  if(S.patch){x.font='120px sans-serif';x.textBaseline='middle';x.fillText(S.patch,256,S.texto?90:183)}
+  if(S.texto){let sz=80;x.textBaseline='middle';do{x.font='bold '+sz+'px '+S.fonte;sz-=4}while(x.measureText(S.texto).width>470&&sz>16);x.fillText(S.texto,256,S.patch?y:183)}
+  const tx=new THREE.CanvasTexture(c);tx.encoding=THREE.sRGBEncoding;tx.anisotropy=4;return tx;
+}
+function updateGL(){
+  if(!gl)return;
+  while(garG.children.length)garG.remove(garG.children[0]);
+  skinM.color.set(new THREE.Color(S.pele).convertSRGBToLinear());
+  const long=S.base==='moletom',m=mat(S.cor,.95);m.side=THREE.DoubleSide;
+  const rg=[[1.28,.335,.215],[1.45,.32,.205],[1.7,.355,.215],[1.86,.375,.2],[1.97,.345,.15],[2.06,.2,.125],[2.12,.125,.11]];if(long)rg.unshift([1.2,.31,.2]);
+  garG.add(new THREE.Mesh(loft(rg,48),m));
+  const sl=long?[[-.88,.06,.06],[-.6,.075,.075],[-.42,.09,.09],[-.1,.115,.115],[0,.11,.11]]:[[-.26,.097,.097],[-.12,.108,.108],[0,.11,.11]];
+  [1,-1].forEach(sd=>{const s=new THREE.Mesh(loft(sl,28),m);s.position.set(sd*.41,1.96,0);s.rotation.z=sd*.1;garG.add(s)});
+  const col=new THREE.Mesh(new THREE.TorusGeometry(.125,.016,10,32),mat(long?S.cor:'#f4f4f4'));col.rotation.x=Math.PI/2;col.position.y=2.1;col.scale.set(1,.85,1);garG.add(col);
+  const g=new THREE.PlaneGeometry(.42,.3,16,1),ps=g.attributes.position;for(let i=0;i<ps.count;i++){const px=ps.getX(i);ps.setZ(i,.215-.95*px*px)}g.computeVertexNormals();
+  const p=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:printTex(),transparent:true,roughness:.9,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));p.position.set(0,1.7,.004);garG.add(p);
+  garG.traverse(o=>{if(o.isMesh)o.castShadow=true});
+  const b=body(),k=Math.max(.85,Math.min(1.3,b.chest/92)),s=SIZES[S.tam].s,hs=S.alt/170;
+  bodyG.scale.set(k,1,k);garG.scale.set(s,1,s);fig.scale.set(hs,hs,hs);
+}
+
+/* ---------- Interface ---------- */
+const TABS=[['estudio','Estúdio 3D'],['provador','Provador'],['orcamento','Orçamento'],['feed','Estilos'],['loja','Loja'],['eventos','Eventos'],['admin','Gestão'],['conta','Entrar']];
+function nav(){$('nav').innerHTML=TABS.filter(([k])=>k!=='admin'||(U&&U.perfil==='Gestor')).map(([k,l])=>`<button data-t="${k}" aria-current="${tab===k}">${k==='conta'&&U?esc(U.email.split('@')[0]):l}</button>`).join('');
+  $('nav').onclick=e=>{const t=e.target.dataset.t;if(t)go(t)}}
+function go(t){tab=t;nav();$('panel').onclick=null;const wide=t!=='estudio'&&t!=='provador';$('main').className=wide?'wide':'';$('stage').style.display=wide?'none':'';({estudio:vEstudio,provador:vProvador,orcamento:vOrc,feed:vFeed,loja:vLoja,eventos:vEventos,admin:vAdmin,conta:vConta})[t]();if(!wide)setTimeout(()=>{resize();updateGL()},0)}
+function bind(id,key,num){const e=$(id);e.oninput=()=>{S[key]=num?+e.value:e.value;updateGL();if(tab==='provador')info()}}
+function vEstudio(){
+  $('panel').innerHTML=`<h2>Crie sua peça</h2>
+  <div class="two"><div class="row"><label for="base">Peça base</label><select id="base"><option value="camiseta">Camiseta</option><option value="moletom">Moletom</option></select></div>
+  <div class="row"><label for="tam">Tamanho</label><select id="tam">${Object.keys(SIZES).map(k=>`<option>${k}</option>`).join('')}</select></div></div>
+  <div class="row"><span class="lbl">Cor da peça</span><div class="sw" id="sw">${COLORS.map(c=>`<button style="background:${c}" data-c="${c}" aria-label="Cor ${c}" aria-pressed="${S.cor===c}"></button>`).join('')}</div></div>
+  <div class="row"><label for="texto">Texto</label><input type="text" id="texto" maxlength="24"></div>
+  <div class="two"><div class="row"><label for="fonte">Fonte</label><select id="fonte">${Object.entries(FONTS).map(([k,v])=>`<option value='${v}'>${k}</option>`).join('')}</select></div>
+  <div class="row"><label for="corTexto">Cor do texto</label><input type="color" id="corTexto"></div></div>
+  <div class="row"><label for="patch">Patch</label><select id="patch"><option value="">Nenhum</option><option>★</option><option>🌸</option><option>⚡</option><option>🔥</option></select></div>
+  <div class="acts"><button class="btn" id="send">Enviar Blueprint</button><button class="btn ghost" id="save">Salvar rascunho</button></div>`;
+  ['base','tam','texto','fonte','corTexto','patch'].forEach(k=>{$(k).value=S[k];bind(k,k)});
+  $('sw').onclick=e=>{const c=e.target.dataset.c;if(!c)return;S.cor=c;[...$('sw').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===c));updateGL()};
+  $('save').onclick=()=>{try{localStorage.setItem('dc-draft',JSON.stringify(S));toast('Rascunho salvo neste navegador')}catch(e){toast('Não foi possível salvar o rascunho')}};
+  $('send').onclick=()=>{if(!U){toast('Entre na sua conta para enviar o Blueprint');go('conta');return}newQuote();go('orcamento')};
+}
+function info(){const b=body();$('info').innerHTML=`Tamanho sugerido: <span class="badge">${b.sug}</span> · peito estimado ${b.chest.toFixed(0)} cm<br>Caimento do <b>${S.tam}</b>: <b class="${b.fit[1]}">${b.fit[0]}</b>`}
+function vProvador(){
+  $('panel').innerHTML=`<h2>Provador virtual</h2>
+  <div class="row"><label for="alt">Altura: <b id="av"></b></label><input type="range" id="alt" min="140" max="210"></div>
+  <div class="row"><label for="peso">Peso: <b id="pv"></b></label><input type="range" id="peso" min="40" max="140"></div>
+  <div class="two"><div class="row"><label for="sexo">Sexo</label><select id="sexo"><option value="F">Feminino</option><option value="M">Masculino</option></select></div>
+  <div class="row"><label for="tam">Tamanho da peça</label><select id="tam">${Object.keys(SIZES).map(k=>`<option>${k}</option>`).join('')}</select></div></div>
+  <div class="row"><label for="pele">Tom de pele do manequim</label><select id="pele"><option value="#f3d2b8">Muito clara</option><option value="#e0ac84">Clara</option><option value="#c68f6b">Média</option><option value="#8d5a3b">Escura</option><option value="#5a3825">Muito escura</option></select></div><p id="info"></p><p class="lbl">Valores aproximados, só para visualização. Confirme as medidas com o confeccionador.</p>`;
+  const lab=()=>{$('av').textContent=S.alt+' cm';$('pv').textContent=S.peso+' kg'};
+  ['alt','peso','sexo','tam','pele'].forEach(k=>{$(k).value=S[k];const n=k==='alt'||k==='peso';bind(k,k,n);if(n)$(k).addEventListener('input',lab)});
+  lab();info();
+}
+function price(m){const base=S.base==='moletom'?95:45;return Math.round((base+(S.texto?12:0)+(S.patch?8:0)+(S.tam==='GG'?10:0))*m.f)}
+function newQuote(){
+  const b=body();
+  quote={id:'ORC-'+Math.floor(1000+Math.random()*9000),status:'Aguardando propostas',blueprint:{pecaBase:S.base,cor:S.cor,texto:S.texto,fonte:S.fonte,patch:S.patch,corTexto:S.corTexto,tamanho:S.tam,medidas:{altura:S.alt,peso:S.peso,sexo:S.sexo,peitoEstimado:Math.round(b.chest)}},ofertas:MAKERS.map(m=>({n:m.n,valor:price(m),prazo:m.d,neg:false})),aprovada:null};
+  setTimeout(()=>{if(quote){quote.status='Propostas recebidas';if(tab==='orcamento')vOrc()}},1200);
+}
+function vOrc(){
+  const q=quote,p=$('panel');
+  if(!q){p.innerHTML=`<h2>Orçamento</h2><p>Você ainda não enviou nenhum design. Crie uma peça no Estúdio 3D e envie o Blueprint para receber propostas.</p><button class="btn" id="g">Ir para o Estúdio</button>`;$('g').onclick=()=>go('estudio');return}
+  p.innerHTML=`<h2>${q.id} <span class="badge">${esc(q.status)}</span></h2>
+  <div class="grid">${q.ofertas.map((o,i)=>`<div class="card ${q.aprovada!==null&&q.aprovada!==i?'dim':''}"><b>${o.n}</b><div class="price">R$ ${o.valor}</div><div class="lbl">Prazo: ${o.prazo} dias</div>
+  <div class="acts">${q.status==='Aguardando propostas'?'<span class="lbl">Aguardando…</span>':q.aprovada===null?`<button class="btn" data-a="${i}">Aprovar fabricação</button>${o.neg?'':`<button class="btn ghost" data-n="${i}">Contraproposta −10%</button>`}`:q.aprovada===i?'<span class="ok"><b>Aprovado</b>: pagamento retido até a entrega</span>':''}</div></div>`).join('')}</div>
+  <h2 style="margin-top:20px">Blueprint enviado</h2><pre>${esc(JSON.stringify(q.blueprint,null,2))}</pre>`;
+  p.onclick=e=>{const a=e.target.dataset.a,n=e.target.dataset.n;
+    if(a!==undefined){q.aprovada=+a;q.status='Fabricação aprovada';toast('Fabricação aprovada');vOrc()}
+    if(n!==undefined){const o=q.ofertas[n];o.valor=Math.round(o.valor*.9);o.neg=true;toast('Contraproposta enviada: valor ajustado');vOrc()}};
+}
+function vFeed(){
+  $('panel').innerHTML=`<h2>Estilos da comunidade</h2><div class="grid">${POSTS.map((p,i)=>hidden[i]?'':`<div class="card"><div class="tee" style="background:${p.cor};color:${p.corTexto}">${p.patch} ${esc(p.texto)}</div><b>${p.a}</b>
+  <div class="acts"><button class="btn ghost" data-l="${i}">♥ ${p.likes+(likes[i]?1:0)}</button><button class="btn" data-c="${i}">Clonar estilo</button><button class='btn ghost' data-r='${i}'>Denunciar</button></div></div>`).join('')}</div>`;
+  $('panel').onclick=e=>{const l=e.target.dataset.l,c=e.target.dataset.c;
+    if(e.target.dataset.r!==undefined){const r=+e.target.dataset.r;if(!reports.includes(r)){reports.push(r);toast('Denúncia enviada ao Gestor')}}
+    if(l!==undefined){likes[l]=!likes[l];vFeed()}
+    if(c!==undefined){const p=POSTS[c];Object.assign(S,{cor:p.cor,texto:p.texto,corTexto:p.corTexto,patch:p.patch});toast('Estilo clonado: edite no Estúdio');go('estudio')}};
+}
+function vConta(){
+ if(U){$('panel').innerHTML=`<h2>Sua conta</h2><p>${esc(U.email)}<br><span class='badge'>${U.perfil}</span></p><div class='acts'><button class='btn ghost' id='out'>Sair</button></div>`;$('out').onclick=()=>{U=null;toast('Você saiu');go('conta')};return}
+ let code=null;
+ $('panel').innerHTML=`<h2>Entrar ou criar conta</h2><div class='row'><label for='em'>E-mail</label><input type='text' id='em' inputmode='email' autocomplete='email'></div><div class='row'><label for='pf'>Perfil</label><select id='pf'><option>Cliente</option><option>Lojista</option><option>Gestor</option></select></div><div class='row' id='cr' style='display:none'><label for='cd'>Código de 4 dígitos</label><input type='text' id='cd' inputmode='numeric' maxlength='4'></div><div class='acts'><button class='btn' id='go1'>Enviar código</button></div><p class='lbl'>Protótipo: o código aparece na tela, em vez de chegar por e-mail ou SMS.</p>`;
+ $('go1').onclick=()=>{const em=$('em').value.trim();if(!/^\S+@\S+\.\S+$/.test(em)){toast('Digite um e-mail válido');return}
+  if(!code){code=String(1000+Math.floor(Math.random()*9000));$('cr').style.display='';$('go1').textContent='Entrar';toast('Seu código: '+code);return}
+  if($('cd').value!==code){toast('Código incorreto');return}
+  U={email:em,perfil:$('pf').value};toast('Bem-vindo!');go(U.perfil==='Gestor'?'admin':'estudio')};
+}
+function vLoja(){
+ const sub=cart.reduce((s,i)=>s+PRODUCTS[i].p,0),fr=cart.length&&!pick?15:0,tot=sub*(coupon?.9:1)+fr;
+ $('panel').innerHTML=`<h2>Marketplace de brechós</h2><p class='lbl'>Dados de exemplo.</p><div class='grid'>${PRODUCTS.map((p,i)=>`<div class='card'><div class='tee' style='background:var(--sky1)'>${esc(p.n)}</div><b>R$ ${p.p}</b><div class='lbl'>${p.l}</div><div class='acts'><button class='btn' data-a='${i}'>Adicionar</button></div></div>`).join('')}</div><h2 style='margin-top:20px'>Carrinho (${cart.length})</h2>${cart.length?`<p>${cart.map(i=>esc(PRODUCTS[i].n)).join(', ')}</p><div class='two'><div class='row'><label for='cp'>Cupom de evento</label><input type='text' id='cp' placeholder='DC-XXXX' value='${coupon||''}'></div><div class='row'><label for='mt'>Pagamento</label><select id='mt'><option>Pix</option><option>Cartão</option></select></div></div><label><input type='checkbox' id='pk' ${pick?'checked':''}> Retirar na loja, sem frete</label><p>Subtotal R$ ${sub}${coupon?', cupom −10%':''}, frete R$ ${fr}<br><span class='price'>R$ ${tot.toFixed(2)}</span></p><div class='acts'><button class='btn' id='fin'>Finalizar compra</button></div>`:"<p class='lbl'>Seu carrinho está vazio.</p>"}${orders.length?`<h2 style='margin-top:20px'>Pedidos</h2>${orders.map(o=>`<p>${o.id}, R$ ${o.t}, ${o.m}: <b class='ok'>${o.s}</b></p>`).join('')}`:''}`;
+ $('panel').onclick=e=>{const a=e.target.dataset.a;if(a!==undefined){cart.push(+a);vLoja();return}
+  if(e.target.id==='fin'){if(!U){toast('Entre na sua conta para finalizar');go('conta');return}orders.push({id:'PED-'+(1001+orders.length),t:tot.toFixed(2),m:$('mt').value,s:'Pago'});if(coupon)cupons[coupon]='usado';cart=[];coupon=null;toast('Pagamento aprovado (simulado)');vLoja()}};
+ if(cart.length){$('cp').onchange=()=>{const v=$('cp').value.trim().toUpperCase();if(!v)coupon=null;else if(cupons[v]==='ativo'){coupon=v;toast('Cupom aplicado')}else{coupon=null;toast('Cupom inválido ou já usado')}vLoja()};$('pk').onchange=()=>{pick=$('pk').checked;vLoja()}}
+}
+function qr(c){let h=0;for(const ch of c)h=(h*31+ch.charCodeAt(0))>>>0;const n=17;let r='';for(let y=0;y<n;y++)for(let x=0;x<n;x++){h=(h*1664525+1013904223)>>>0;const lx=x<5?x:x-n+5,ly=y<5?y:y-n+5,fz=(x<5||x>=n-5)&&(y<5||y>=n-5)&&!(x>=n-5&&y>=n-5);const on=fz?(lx===0||ly===0||lx===4||ly===4||(lx===2&&ly===2)):((h>>>16)&1);if(on)r+=`<rect x='${x}' y='${y}' width='1' height='1'/>`}return `<svg viewBox='-1 -1 19 19' width='128' role='img' aria-label='QR Code simulado ${c}' style='background:#fff;border-radius:8px;display:block' fill='#111'>${r}</svg>`}
+function vEventos(){
+ const mine=Object.entries(cupons);
+ $('panel').innerHTML=`<h2>Eventos e feiras</h2><p class='lbl'>Dados de exemplo. O QR é uma ilustração e não pode ser lido por câmera.</p><div class='grid'>${EVENTS.map((v,i)=>`<div class='card'><b>${v.n}</b><div class='lbl'>${v.d}, ${v.l}</div><div class='lbl'>Barraca: ${v.s}</div><div class='acts'><button class='btn' data-g='${i}'>Gerar QR de desconto</button></div></div>`).join('')}</div>${mine.length?`<h2 style='margin-top:20px'>Seus cupons</h2><div class='grid'>${mine.map(([c,s])=>`<div class='card'>${qr(c)}<p><b>${c}</b>: <span class='${s==='ativo'?'ok':'warn'}'>${s}</span></p></div>`).join('')}</div>`:''}${U&&U.perfil==='Lojista'?`<h2 style='margin-top:20px'>Validar no estande (offline)</h2><div class='two'><input type='text' id='vc' placeholder='DC-XXXX'><button class='btn' id='vb'>Validar cupom</button></div>`:''}`;
+ $('panel').onclick=e=>{const g=e.target.dataset.g;if(g!==undefined){if(!U){toast('Entre na sua conta para gerar o QR');go('conta');return}const c='DC-'+Math.floor(Math.random()*65536).toString(16).toUpperCase().padStart(4,'0');cupons[c]='ativo';toast('QR gerado: 10% de desconto');vEventos();return}
+  if(e.target.id==='vb'){const v=$('vc').value.trim().toUpperCase();if(cupons[v]==='ativo'){cupons[v]='usado';toast('Válido: aplique 10% de desconto')}else toast('Cupom inválido ou já usado');vEventos()}};
+}
+function vAdmin(){
+ const rp=reports.filter(i=>!hidden[i]);
+ $('panel').innerHTML=`<h2>Painel do Gestor</h2><p><span class='badge'>${reports.length} denúncias</span> <span class='badge'>${orders.length} pedidos</span> <span class='badge'>${Object.keys(cupons).length} cupons</span></p>${rp.length?rp.map(i=>`<div class='card' style='margin-bottom:10px'><b>${POSTS[i].a}</b>: ${esc(POSTS[i].texto)}<div class='acts'><button class='btn' data-h='${i}'>Ocultar publicação</button></div></div>`).join(''):"<p class='lbl'>Nenhuma denúncia pendente. Denuncie um post na aba Estilos para testar.</p>"}`;
+ $('panel').onclick=e=>{const h=e.target.dataset.h;if(h!==undefined){hidden[h]=true;toast('Publicação ocultada');vAdmin()}};
+}
+initGL();go('estudio');
+</script>
+</body>
+</html>
